@@ -2,10 +2,9 @@
 
 This starter gives you a **production-minded PoC skeleton** for a 2‑week build using:
 - **Frontend:** Next.js (TypeScript) with LiveKit Web SDK
-- **Backend:** Python FastAPI (modular, typed), ready for Docker
-- **Real-time infra:** LiveKit Cloud (token generation handled server-side)
-- **AI:** OpenAI API (stubbed service ready for Realtime/Text pipelines)
-- **Auth-ready:** Placeholders for JWT/session; keep secrets in `.env`
+- **Backend:** Python FastAPI
+- **Real-time infra:** LiveKit Cloud 
+- **AI:** OpenAI API 
 
 ---
 
