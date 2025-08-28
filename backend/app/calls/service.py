@@ -11,9 +11,6 @@ from app.core.database import supabase  # your configured Supabase client
 TABLE = "calls"
 
 def create_agent_token(room_name: str, identity: str | None = None) -> str:
-    """
-    Generate an access token for joining a LiveKit room.
-    """
     identity = identity or f"web-{uuid4()}"
     token = (
         api.AccessToken(
@@ -29,7 +26,6 @@ def create_agent_token(room_name: str, identity: str | None = None) -> str:
 
 
 def _fetch_call_by_id(call_id: UUID) -> Optional[dict]:
-    """Helper: fetch one call row by id."""
     res = (
         supabase.table(TABLE)
         .select("*")
@@ -41,12 +37,6 @@ def _fetch_call_by_id(call_id: UUID) -> Optional[dict]:
 
 
 def create_call(agent_id: Optional[UUID], customer_number: str, direction: str = "outbound") -> dict:
-    """
-    Safe insert:
-    1) Generate UUID client-side
-    2) Insert
-    3) Fetch in a separate query
-    """
     call_id = uuid4()
     payload = {
         "id": str(call_id),
@@ -86,11 +76,6 @@ def get_call(call_id: UUID) -> Optional[dict]:
 
 
 def complete_call(call_id: UUID) -> Optional[dict]:
-    """
-    Safe update:
-    1) Update status + ended_at
-    2) Fetch in a separate query
-    """
     updates = {
         "status": "completed",
         "ended_at": datetime.now(timezone.utc).isoformat(),
