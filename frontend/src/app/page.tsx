@@ -22,14 +22,20 @@ export default function Home() {
     if (!identity) return;
     setLoading(true);
     try {
-      const { token } = await getLiveKitToken("test-room", identity);
+      // 🔹 For POC: hardcode a fake customer number
+      const { token, call_id, room } = await getLiveKitToken(
+        "+15551234567",
+        identity
+      );
 
       sessionStorage.setItem(STORAGE_TOKEN_KEY, token);
       sessionStorage.setItem(STORAGE_IDENTITY_KEY, identity);
+      sessionStorage.setItem("call_id", call_id);
+      sessionStorage.setItem("room_name", room);
 
       router.push("/call");
     } catch (err) {
-      console.error("Failed to get LiveKit token:", err);
+      console.error("Failed to start call:", err);
       alert("Failed to join call. See console for details.");
     } finally {
       setLoading(false);

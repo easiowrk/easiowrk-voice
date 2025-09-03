@@ -5,31 +5,33 @@ from uuid import UUID, uuid4
 from datetime import datetime, timezone
 
 from app.core.config import settings
-from app.core.database import supabase  # your configured Supabase client
-
+from app.core.database import supabase
 
 TABLE = "calls"
 
 def create_agent_token(room_name: str, identity: str | None = None) -> str:
-    """
-    Generate an access token for joining a LiveKit room.
-    """
     identity = identity or f"web-{uuid4()}"
     token = (
         api.AccessToken(
             api_key=settings.livekit_api_key,
-            api_secret=settings.livekit_api_secret
+            api_secret=settings.livekit_api_secret,
         )
         .with_identity(identity)
         .with_name(identity)
-        .with_grants(api.VideoGrants(room_join=True, room=room_name))
+        .with_grants(
+            api.VideoGrants(
+                room_join=True,
+                room=room_name,
+                can_publish=True,
+                can_subscribe=True,
+            )
+        )
         .to_jwt()
     )
     return token
 
 
 def _fetch_call_by_id(call_id: UUID) -> Optional[dict]:
-    """Helper: fetch one call row by id."""
     res = (
         supabase.table(TABLE)
         .select("*")
@@ -41,18 +43,14 @@ def _fetch_call_by_id(call_id: UUID) -> Optional[dict]:
 
 
 def create_call(agent_id: Optional[UUID], customer_number: str, direction: str = "outbound") -> dict:
-    """
-    Safe insert:
-    1) Generate UUID client-side
-    2) Insert
-    3) Fetch in a separate query
-    """
     call_id = uuid4()
     payload = {
         "id": str(call_id),
         "agent_id": str(agent_id) if agent_id else None,
         "customer_number": customer_number,
         "direction": direction,
+        "status": "active",
+        "started_at": datetime.now(timezone.utc).isoformat(),
     }
 
     res = supabase.table(TABLE).insert(payload).execute()
@@ -86,11 +84,6 @@ def get_call(call_id: UUID) -> Optional[dict]:
 
 
 def complete_call(call_id: UUID) -> Optional[dict]:
-    """
-    Safe update:
-    1) Update status + ended_at
-    2) Fetch in a separate query
-    """
     updates = {
         "status": "completed",
         "ended_at": datetime.now(timezone.utc).isoformat(),
@@ -101,4 +94,23 @@ def complete_call(call_id: UUID) -> Optional[dict]:
         raise RuntimeError(f"Supabase update error: {res.error}")
 
     row = _fetch_call_by_id(call_id)
-    return row 
+    return row
+
+
+# 🔑 NEW: tell LiveKit to spin up the agent-worker
+def dispatch_agent_job(call_id: UUID, room_name: str, agent_identity: str):
+    lk = api.LiveKitAPI(
+        settings.livekit_api_key,
+        settings.livekit_api_secret,
+        settings.livekit_host,  # e.g. "https://<your-domain>.livekit.cloud"
+    )
+
+    job_req = api.AgentJobRequest(
+        worker_name="agent-worker",   # must match the worker registered in `agents_worker.py`
+        room_name=room_name,
+        identity=agent_identity,
+        metadata={"call_id": str(call_id)},
+    )
+
+    lk.agents.create_job(job_req)
+    print(f"🚀 Dispatched agent job for call {call_id} in room {room_name}")
