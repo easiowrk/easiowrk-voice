@@ -1,9 +1,9 @@
 # EasioWrk Voice
 
-This starter gives you a **production-minded PoC skeleton** for a 2‑week build using:
+This project uses:
 - **Frontend:** Next.js (TypeScript) with LiveKit Web SDK
 - **Backend:** Python FastAPI
-- **Real-time infra:** LiveKit Cloud 
+- **Real-time infra:** LiveKit Cloud (+ Deepgram, Cartesia)
 - **AI:** OpenAI API 
 
 ---
